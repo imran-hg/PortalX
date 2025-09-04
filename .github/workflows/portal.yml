@@ -1,0 +1,44 @@
+name: Pull on server
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  run_pull:
+    name: Pull latest changes
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Setup SSH
+      run: |
+        mkdir -p "$HOME/.ssh"
+        chmod 700 "$HOME/.ssh"
+        echo "${{ secrets.SSH_PUBLIC_KEY }}" > "$HOME/.ssh/authorized_keys"
+        chmod 600 "$HOME/.ssh/authorized_keys"
+        ssh-keyscan -H "${{ secrets.SSH_HOST }}" > "$HOME/.ssh/known_hosts"
+    - name: Debug SSH setup
+      run: |
+        ls -la "$HOME/.ssh"
+        ssh-keygen -l -f "$HOME/.ssh/authorized_keys"
+        echo "Host verification:"
+        ssh-keygen -F "${{ secrets.SSH_HOST }}" -f "$HOME/.ssh/known_hosts"
+    - name: Test connection
+      run: |
+        ssh -T -o StrictHostKeyChecking=yes \
+            -i "$HOME/.ssh/authorized_keys" \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            echo "SSH connection successful!"
+    - name: Pull changes
+      run: |
+        ssh -T -o StrictHostKeyChecking=yes \
+            -i "$HOME/.ssh/authorized_keys" \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" << 'EOF'
+        cd '${{ secrets.WORK_DIR }}'
+        git checkout '${{ secrets.MAIN_BRANCH }}'
+        git pull --ff-only
+        echo "Pull successful!"
+        EOF
+    - name: Cleanup
+      run: rm -rf "$HOME/.ssh"
