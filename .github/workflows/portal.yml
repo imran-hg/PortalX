@@ -27,7 +27,7 @@ jobs:
     - name: Test connection
       run: |
         ssh -T -o StrictHostKeyChecking=yes \
-            -i "$HOME/.ssh/id_rsa.pub" \
+            -i "$HOME/.ssh/id_rsa" \
             "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
             echo "SSH connection successful!"
     - name: Pull changes
